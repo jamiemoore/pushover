@@ -1,0 +1,31 @@
+#!/bin/bash
+# Run this script to be notified when a user successfully connects via ssh
+# Place script in /usr/local/bin/ssh_login
+# Add the following to /etc/ssh/sshd_config
+# ForceCommand="/usr/local/bin/ssh_login"
+# alternative: Use pam.exec
+
+# Contents of pushover.conf
+# PUSHUSER=username
+# PUSHTOKEN=token
+. /etc/pushover.conf
+
+RHOST=`echo $SSH_CLIENT | cut -f1 -d ' '`
+
+curl -s \
+-F "token=$PUSHTOKEN" \
+-F "user=$PUSHUSER" \
+-F "sound=gamelan" \
+-F "title=login: $USER@$HOSTNAME" \
+-F "priority=0" \
+-F "timestamp=`date +%s`" \
+-F "message=ssh login from $RHOST to $USER@$HOSTNAME on `date`" \
+https://api.pushover.net/1/messages.json > /dev/null
+
+#Pass through the $SSH_ORIGINAL_COMMAND or invoke login shell
+CMD=${SSH_ORIGINAL_COMMAND:-$SHELL}
+if [ $CMD == $SHELL ]; then
+   $CMD -l
+else
+   $CMD
+fi
